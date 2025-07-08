@@ -1,7 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"video-hosting-backend/initialaizers"
 
-func main()  {
-	fmt.Printf("Hello, world!\n")
+	"github.com/gin-gonic/gin"
+)
+
+func init() {
+	initialaizers.LoadEnvVariables()
+}
+
+func main() {
+	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	router.Run()
 }
