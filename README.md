@@ -12,7 +12,7 @@ Backend для pet-проекта видеохостинга (-> стримин�
      go version
 
 3. Клонирование репозитория
-    git clone https://github.com/you/your-project.git
+    git clone https://github.com/Serioga111/viewer_server.git
     cd your-project
 
 4. Создать свой .env
