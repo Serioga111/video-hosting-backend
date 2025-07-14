@@ -1,4 +1,5 @@
-# video-hosting-backend
+# Viewer_server
+
 Backend для pet-проекта видеохостинга (-> стримингового сервиса)
 
 Для запуска:
