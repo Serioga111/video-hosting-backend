@@ -1,29 +1,28 @@
 package main
 
 import (
-	"log"
+	"os"
+	"video-hosting-backend/config"
+	"video-hosting-backend/internal/database"
+	"video-hosting-backend/internal/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
-func LoadEnvVariables() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
-
-func init() {
-	LoadEnvVariables()
-}
-
 func main() {
+	config.LoadEnvVariables()
+	database.InitDB()
+
 	router := gin.Default()
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
+		var user models.User
+		if err := database.DB.First(&user).Error; err != nil {
+			c.JSON(500, gin.H{"error": "could not fetch user"})
+			return
+		}
+
+		c.JSON(200, user)
 	})
-	router.Run()
+
+	router.Run(os.Getenv("PORT"))
 }
