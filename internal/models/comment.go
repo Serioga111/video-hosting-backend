@@ -8,5 +8,5 @@ type Comment struct {
 	UserId          uint      `gorm:"not null" json:"user_id"`
 	ParentCommentId uint      `gorm:"default:0" json:"parent_comment_id"`
 	Content         string    `gorm:"type:text;not null" json:"content"`
-	CreatedAt       time.Time `gorm:not null" json:"created_at"`
+	CreatedAt       time.Time `gorm:"not null" json:"created_at"`
 }
