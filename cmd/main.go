@@ -15,6 +15,10 @@ func main() {
 	database.InitDB()
 
 	router := gin.Default()
+
+	router.StaticFile("/swagger.yaml", "./docs/swagger.yaml")
+	router.StaticFile("/api-docs", "./docs/index.html")
+
 	routes.SetupRoutes(router)
 
 	router.Run(os.Getenv("PORT"))

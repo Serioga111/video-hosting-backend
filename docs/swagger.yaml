@@ -1,0 +1,267 @@
+openapi: 3.0.1
+info:
+  title: Viewer API
+  version: "1.0"
+servers:
+  - url: "{scheme}://{host}:{port}/api"
+    description: Dev server
+    variables:
+      scheme:
+        default: http
+        enum:
+          - http
+      host:
+        default: localhost
+      port:
+        default: "8080"
+
+
+paths:
+  /users:
+    get:
+      summary: Get all users
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Successful response with a list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserDTO'
+
+    post:
+      summary: Register a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserDTO'
+        "400":
+          description: Invalid input
+        "500":
+          description: Server error
+
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserDTO'
+        "400":
+          description: Invalid user ID
+        "404":
+          description: User not found
+
+    put:
+      summary: Update user by ID
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDTO'
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserDTO'
+        "400":
+          description: Invalid input or user ID
+        "500":
+          description: Server error
+
+    delete:
+      summary: Delete user by ID
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: User deleted
+        "400":
+          description: Invalid user ID
+        "500":
+          description: Could not delete user
+
+
+components:
+  schemas:
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Video:
+      type: object
+      properties:
+        id:
+          type: integer
+        channel_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        preview_url:
+          type: string
+        video_url:
+          type: string
+        release_date:
+          type: string
+          format: date-time
+        is_private:
+          type: boolean
+        likes_count:
+          type: integer
+        dislikes_count:
+          type: integer
+        comments_count:
+          type: integer
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        video_id:
+          type: integer
+        user_id:
+          type: integer
+        parent_comment_id:
+          type: integer
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Playlist:
+      type: object
+      properties:
+        id:
+          type: integer
+        channel_id:
+          type: integer
+        title:
+          type: string
+        preview_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        views_count:
+          type: integer
+
+    Channel:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        avatar_url:
+          type: string
+        total_views:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        subscribers_count:
+          type: integer
+        subscribers:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserDTO'
+        playlists:
+          type: array
+          items:
+            $ref: '#/components/schemas/Playlist'
+        videos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Video'
+
+    UserSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        settings:
+          type: string
