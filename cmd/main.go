@@ -16,6 +16,7 @@ func main() {
 
 	router := gin.Default()
 
+	//Swagger documentation
 	router.StaticFile("/swagger.yaml", "./docs/swagger.yaml")
 	router.StaticFile("/api-docs", "./docs/index.html")
 

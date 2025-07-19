@@ -2,19 +2,25 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 	"video-hosting-backend/internal/models"
 	"video-hosting-backend/internal/repositories"
 	"video-hosting-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	repo repositories.UserRepository
+	repo  repositories.UserRepository
+	token repositories.TokenRepository
 }
 
-func NewUserHandler(repo repositories.UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(repo repositories.UserRepository, token repositories.TokenRepository) *UserHandler {
+	return &UserHandler{
+		repo:  repo,
+		token: token,
+	}
 }
 
 func (h *UserHandler) Register(c *gin.Context) {
@@ -105,4 +111,40 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"users": users})
+}
+
+func (h *UserHandler) Login(c *gin.Context) {
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "invalid input"})
+		return
+	}
+
+	user, err := h.repo.GetUserByEmail(input.Email)
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)) != nil {
+		c.JSON(401, gin.H{"error": "wrong email or password"})
+		return
+	}
+
+	tokenString, err := services.GenerateRandomToken()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "could not generate token"})
+		return
+	}
+
+	token := models.Token{
+		UserID:    user.Id,
+		Token:     tokenString,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	if err = h.token.SaveToken(&token); err != nil {
+		c.JSON(500, gin.H{"error": "could not save token"})
+		return
+	}
+
+	c.JSON(200, gin.H{"token": tokenString})
 }

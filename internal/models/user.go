@@ -11,3 +11,10 @@ type User struct {
 	Password  string    `gorm:"type:varchar(255);not null"`
 	CreatedAt time.Time `gorm:"not null"`
 }
+
+type UserDTO struct {
+	Id        uint      `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+}
