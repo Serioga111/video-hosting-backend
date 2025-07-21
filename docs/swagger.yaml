@@ -21,7 +21,7 @@ paths:
     get:
       summary: Get all users
       tags:
-        - Users
+        - User
       responses:
         "200":
           description: Successful response with a list of users
@@ -34,11 +34,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/UserDTO'
-
+  /register:
     post:
       summary: Register a new user
       tags:
-        - Users
+        - User
       requestBody:
         required: true
         content:
@@ -53,7 +53,7 @@ paths:
                 password:
                   type: string
       responses:
-        "201":
+        "200":
           description: User created successfully
           content:
             application/json:
@@ -66,18 +66,19 @@ paths:
           description: Invalid input
         "500":
           description: Server error
-
-  /users/{id}:
+  /user/{id}:
     get:
       summary: Get user by ID
+      security:
+        - BearerAuth: []
       tags:
-        - Users
+        - User
       parameters:
         - name: id
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: User found
@@ -92,17 +93,18 @@ paths:
           description: Invalid user ID
         "404":
           description: User not found
-
     put:
       summary: Update user by ID
+      security:
+        - BearerAuth: []
       tags:
-        - Users
+        - User
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -123,17 +125,18 @@ paths:
           description: Invalid input or user ID
         "500":
           description: Server error
-
     delete:
       summary: Delete user by ID
+      security:
+        - BearerAuth: []
       tags:
-        - Users
+        - User
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "204":
           description: User deleted
@@ -141,49 +144,144 @@ paths:
           description: Invalid user ID
         "500":
           description: Could not delete user
-  /users/login:
-    post:
-      summary: User login
+  /user/by-email/{email}:
+    get:
+      summary: Get user by email
       tags:
-        - Auth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-                - password
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
+        - User
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User email address
       responses:
         "200":
-          description: Successful login
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "404":
+          description: User not found
+        "400":
+          description: Invalid input
+  /login:
+      post:
+        summary: User login
+        tags:
+          - Auth
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - email
+                  - password
+                properties:
+                  email:
+                    type: string
+                    format: email
+                  password:
+                    type: string
+                    format: password
+        responses:
+          "200":
+            description: Successful login
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    token:
+                      type: string
+          "401":
+            description: Invalid credentials
+          "500":
+            description: Server error
+  /user/logout:
+    delete:
+      summary: Logout user
+      description: Deletes the current user's token, effectively logging them out.
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Successfully logged out
+        "400":
+          description: No token provided
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
+                  error:
                     type: string
-        "401":
-          description: Invalid credentials
         "500":
-          description: Server error
+          description: Could not delete token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /auth/refresh:
+    post:
+      summary: Refresh access token using refresh token from HttpOnly cookie
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: New access token generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: New JWT access token
+        '401':
+          description: Refresh token missing, invalid or expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: invalid or expired refresh token
+        '500':
+          description: Internal server error while generating token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: could not generate access token
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UUID
   schemas:
     UserDTO:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         username:
           type: string
         email:
@@ -196,9 +294,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         channel_id:
-          type: integer
+          type: string
         title:
           type: string
         description:
@@ -227,13 +325,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         video_id:
-          type: integer
+          type: string
         user_id:
-          type: integer
+          type: string
         parent_comment_id:
-          type: integer
+          type: string
         content:
           type: string
         created_at:
@@ -244,9 +342,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         channel_id:
-          type: integer
+          type: string
         title:
           type: string
         preview_url:
@@ -261,9 +359,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         user_id:
-          type: integer
+          type: string
         name:
           type: string
         description:
@@ -294,8 +392,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         user_id:
-          type: integer
+          type: string
         settings:
           type: string
+

@@ -46,7 +46,6 @@ func InitDB() {
 		&models.PlaylistSubscription{},
 		&models.PlaybackHistory{},
 		&models.Token{},
-		&models.UserSettings{},
 	)
 
 	if err != nil {

@@ -4,15 +4,16 @@ import (
 	"video-hosting-backend/internal/models"
 	"video-hosting-backend/internal/services"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	CreateUser(user *models.User) (*models.UserDTO, error)
-	GetUserById(id uint) (*models.UserDTO, error)
-	GetUserByEmail(email string) (*models.User, error)
+	GetUserById(id string) (*models.User, error)
+	GetUserByEmail(email string) (*models.UserDTO, error)
 	UpdateUser(user *models.User) (*models.UserDTO, error)
-	DeleteUser(id uint) error
+	DeleteUser(id string) error
 	ListUsers() ([]models.UserDTO, error)
 }
 
@@ -25,26 +26,29 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) CreateUser(user *models.User) (*models.UserDTO, error) {
+	if user.Id == "" {
+		user.Id = uuid.NewString()
+	}
 	if err := r.db.Create(user).Error; err != nil {
 		return nil, err
 	}
 	return services.ToUserDTO(user), nil
 }
 
-func (r *userRepository) GetUserById(id uint) (*models.UserDTO, error) {
-	var user models.User
-	if err := r.db.First(&user, id).Error; err != nil {
+func (r *userRepository) GetUserById(id string) (*models.User, error) {
+	var user *models.User
+	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
 		return nil, err
 	}
-	return services.ToUserDTO(&user), nil
+	return user, nil
 }
 
-func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
+func (r *userRepository) GetUserByEmail(email string) (*models.UserDTO, error) {
 	var user *models.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
-	return user, nil
+	return services.ToUserDTO(user), nil
 }
 
 func (r *userRepository) UpdateUser(user *models.User) (*models.UserDTO, error) {
@@ -54,7 +58,7 @@ func (r *userRepository) UpdateUser(user *models.User) (*models.UserDTO, error) 
 	return services.ToUserDTO(user), nil
 }
 
-func (r *userRepository) DeleteUser(id uint) error {
+func (r *userRepository) DeleteUser(id string) error {
 	return r.db.Delete(&models.User{}, id).Error
 }
 

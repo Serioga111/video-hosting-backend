@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"strconv"
 	"time"
 	"video-hosting-backend/internal/models"
 	"video-hosting-backend/internal/repositories"
@@ -49,12 +48,19 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 func (h *UserHandler) GetUserById(c *gin.Context) {
 	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
+	user, err := h.repo.GetUserById(id)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid user ID"})
+		c.JSON(404, gin.H{"error": "user not found"})
 		return
 	}
-	user, err := h.repo.GetUserById(uint(idUint))
+
+	c.JSON(200, gin.H{"user": user})
+
+}
+
+func (h *UserHandler) GetUserByEmail(c *gin.Context) {
+	email := c.Param("email")
+	user, err := h.repo.GetUserByEmail(email)
 	if err != nil {
 		c.JSON(404, gin.H{"error": "user not found"})
 		return
@@ -66,18 +72,13 @@ func (h *UserHandler) GetUserById(c *gin.Context) {
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid user ID"})
-		return
-	}
 
 	var input models.User
 	if err := c.ShouldBindBodyWithJSON(&input); err != nil {
 		c.JSON(400, gin.H{"error": "invald input"})
 		return
 	}
-	input.Id = uint(idUint)
+	input.Id = id
 
 	user, err := h.repo.UpdateUser(&input)
 	if err != nil {
@@ -90,12 +91,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid user ID"})
-		return
-	}
-	if err := h.repo.DeleteUser(uint(idUint)); err != nil {
+	if err := h.repo.DeleteUser(id); err != nil {
 		c.JSON(500, gin.H{"error": "could not delete user"})
 		return
 	}
@@ -124,8 +120,20 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	user, err := h.repo.GetUserByEmail(input.Email)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)) != nil {
-		c.JSON(401, gin.H{"error": "wrong email or password"})
+	if err != nil {
+		c.JSON(401, gin.H{"error": "wrong email"})
+		return
+	}
+
+	userById, err := h.repo.GetUserById(user.Id)
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(userById.Password), []byte(input.Password)) != nil {
+		c.JSON(401, gin.H{"error": "wrong password"})
+		return
+	}
+
+	accessToken, err := services.GenerateAccessToken(string(user.Id))
+	if err != nil {
+		c.JSON(500, gin.H{"error": "could not generate access token"})
 		return
 	}
 
@@ -136,9 +144,11 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	token := models.Token{
+		ID:        tokenString,
+		IssuedAt:  time.Now(),
 		UserID:    user.Id,
 		Token:     tokenString,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 	}
 
 	if err = h.token.SaveToken(&token); err != nil {
@@ -146,5 +156,54 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"token": tokenString})
+	c.SetCookie(
+		"refresh_token",
+		tokenString,
+		30*24*60*60, // 30 days
+		"/",
+		"",
+		true,
+		true,
+	)
+
+	c.JSON(200, gin.H{"token": accessToken})
+}
+
+func (h *UserHandler) Logout(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(401, gin.H{"error": "refresh token not found"})
+		return
+	}
+
+	if err := h.token.DeleteToken(refreshToken); err != nil {
+		c.JSON(500, gin.H{"error": "could not delete token"})
+		return
+	}
+
+	c.Status(204)
+}
+
+func (h *UserHandler) RefreshToken(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(401, gin.H{"error": "refresh token not found"})
+		return
+	}
+
+	storedToken, err := h.token.GetValidToken(refreshToken)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "invalid or expired refresh token"})
+		return
+	}
+
+	accessToken, err := services.GenerateAccessToken(storedToken.UserID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "could not generate access token"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"access_token": accessToken,
+	})
 }

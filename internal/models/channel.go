@@ -3,8 +3,8 @@ package models
 import "time"
 
 type Channel struct {
-	Id               uint       `gorm:"primaryKey" json:"id"`
-	UserId           uint       `gorm:"not null" json:"user_id"`
+	Id               string     `gorm:"type:uuid" json:"id"`
+	UserId           string     `gorm:"not null" json:"user_id"`
 	Name             string     `gorm:"type:varchar(100);not null" json:"name"`
 	Description      string     `gorm:"type:text;not null" json:"description"`
 	AvatarUrl        string     `gorm:"type:varchar(255);not null" json:"avatar_url"`

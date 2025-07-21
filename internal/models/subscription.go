@@ -1,7 +1,6 @@
 package models
 
 type Subscription struct {
-	Id        uint `gorm:"primaryKey" json:"id"`
-	UserId    uint `gorm:"not null" json:"user_id"`
-	ChannelId uint `gorm:"not null" json:"channel_id"`
+	UserId    string `gorm:"not null" json:"user_id"`
+	ChannelId string `gorm:"not null" json:"channel_id"`
 }
